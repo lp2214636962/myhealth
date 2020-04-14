@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.itheima.dao.UserDao">
+
+    <!--根据用户姓名 查询用户拥有的 角色 权限-->
+    <select id="findUserByUsername" parameterType="String" resultMap="userMap">
+        select * from t_user where username = #{username}
+    </select>
+    <resultMap id="userMap" type="com.itheima.pojo.User">
+        <id column="id" property="id"/>
+        <collection property="roles" column="id" select="com.itheima.dao.RoleDao.findRoleByUserId"/>
+    </resultMap>
+
+    <!--分页查询用户-->
+    <select id="findPage" parameterType="string" resultType="com.itheima.pojo.User">
+        select * from t_user
+        <if test="value != null and value.length>0">
+            where name like "%"#{value}"%" or telephone like "%"#{value}"%"
+        </if>
+    </select>
+
+</mapper>

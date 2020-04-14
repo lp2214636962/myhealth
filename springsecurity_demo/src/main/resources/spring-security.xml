@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:dubbo="http://code.alibabatech.com/schema/dubbo"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:security="http://www.springframework.org/schema/security"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                  http://www.springframework.org/schema/beans/spring-beans.xsd
+                  http://www.springframework.org/schema/mvc
+                  http://www.springframework.org/schema/mvc/spring-mvc.xsd
+                  http://code.alibabatech.com/schema/dubbo
+                  http://code.alibabatech.com/schema/dubbo/dubbo.xsd
+                  http://www.springframework.org/schema/context
+                  http://www.springframework.org/schema/context/spring-context.xsd
+                          http://www.springframework.org/schema/security
+                          http://www.springframework.org/schema/security/spring-security.xsd">
+    <!--定义哪些连接可以放行-->
+    <security:http security="none" pattern="/css/**"/>
+    <security:http security="none" pattern="/img/**"/>
+    <security:http security="none" pattern="/js/**"/>
+    <security:http security="none" pattern="/plugins/**"/>
+    <!--定义登录页面放行-->
+    <security:http security="none" pattern="/login.html"/>
+    <!--定义哪些连接不可以放行
+    http：用于定义相关权限控制
+        auto-config：是否自动配置
+                        设置为true时框架会提供默认的一些配置，例如提供默认的登录页面、登出处理等
+                        设置为false时需要显示提供登录表单配置，否则会报错
+        use-expressions：用于指定intercept-url中的access属性是否使用表达式-->
+    <security:http auto-config="true" use-expressions="true">
+
+        <!--只要通过认证就可以访问 isAuthenticated()-->
+        <security:intercept-url pattern="/a.html" access="isAuthenticated()"/>
+        <security:intercept-url pattern="/index.html" access="isAuthenticated()"/>
+        <!--拥有add权限可以访问b.html-->
+        <security:intercept-url access="hasAuthority('add')" pattern="/b.html"/>
+        <!--拥有ROLE_ADMIN角色可以访问c.html页面
+                注意：此处虽然写的是ADMIN角色，框架会自动加上前缀ROLE_
+        -->
+        <security:intercept-url pattern="/c.html" access="hasRole('ADMIN')"/>
+
+        <!--拥有ADD角色的可以访问d.html页面-->
+        <security:intercept-url pattern="/d.html" access="hasRole('ADD')"/>
+        <!--拥有admin权限的可以访问e.html页面-->
+        <security:intercept-url pattern="/e.html" access="hasAuthority('admin')"/>
+        <!--intercept-url：定义一个拦截规则
+            pattern：对哪些url进行权限控制
+            access：在请求对应的URL时需要什么权限，默认配置时它应该是一个以逗号分隔的角色列表，
+              请求的用户只需拥有其中的一个角色就能成功访问对应的URL-->
+        <security:intercept-url pattern="/**" access="hasRole('ROLE_ADMIN')"/>
+        <!--form-login：定义表单登录信息
+                    login-page="/login.html"：表示指定登录页面
+                    username-parameter="username"：使用登录名的名称，默认值是username
+                    password-parameter="password"：使用登录名的密码，默认值是password
+                    login-processing-url="/login.do"：表示登录的url地址
+                    default-target-url="/index.html"：登录成功后的url地址
+                    authentication-failure-url="/login.html"：认证失败后跳转的url地址，失败后指定/login.html-->
+        <security:form-login login-page="/login.html" username-parameter="username"
+                             password-parameter="password" login-processing-url="/login.do"
+                             default-target-url="/index.html" authentication-failure-url="/login.html"
+                                always-use-default-target="true"/>
+        <!--
+        csrf：对应CsrfFilter过滤器
+        disabled：是否启用CsrfFilter过滤器，如果使用自定义登录页面需要关闭此项，否则登录操作会被禁用（403）
+     -->
+        <security:csrf disabled="true"/>
+
+
+        <security:logout logout-url="/logout.do" invalidate-session="true"
+                         logout-success-url="/login.html"/>
+    </security:http>
+
+    <!--
+        3：认证管理，定义登录账号名和密码，并授予访问的角色、权限
+        authentication-manager：认证管理器，用于处理认证操作
+    -->
+    <!--<security:authentication-manager>
+        &lt;!&ndash;authentication-provider：认证提供者，执行具体的认证逻辑&ndash;&gt;
+        <security:authentication-provider>
+            &lt;!&ndash; user-service：用于获取用户信息，提供给authentication-provider进行认证&ndash;&gt;
+            <security:user-service>
+                &lt;!&ndash; user：定义用户信息，可以指定用户名、密码、角色，后期可以改为从数据库查询用户信息
+              {noop}：表示当前使用的密码为明文&ndash;&gt;
+                <security:user name="admin" password="{noop}admin11" authorities="ROLE_ADMIN"/>
+            </security:user-service>
+        </security:authentication-provider>
+    </security:authentication-manager>-->
+
+    <security:authentication-manager>
+        <!--authentication-provider：认证提供者，执行具体的认证逻辑-->
+        <security:authentication-provider user-service-ref="myUserService">
+            <!--指定加密策略-->
+            <security:password-encoder ref="passwordEncoder"></security:password-encoder>
+        </security:authentication-provider>
+    </security:authentication-manager>
+
+    <!--配置密码加密对象-->
+    <bean id="passwordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"></bean>
+    <!--包扫描-->
+    <context:component-scan base-package="com.itheima"/>
+
+    <!--注解驱动-->
+    <mvc:annotation-driven></mvc:annotation-driven>
+
+    <!--权限控制  注解支持
+            enabled  开启注解支持
+            disabled  不开启注解支持  默认不开启   -->
+    <security:global-method-security pre-post-annotations="enabled"/>
+
+</beans>
